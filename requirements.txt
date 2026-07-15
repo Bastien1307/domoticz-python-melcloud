@@ -1,0 +1,6 @@
+# Dépendances de la couche LOCALE du plugin MELCloud (melcloud_local.py +
+# lib vendorée pymitsubishi/). Installées par customstart.sh au premier
+# démarrage du conteneur (téléchargées en cache si internet, cf. userdata/).
+# Sans elles, le plugin fonctionne quand même en cloud-only (message au log).
+pycryptodome
+requests

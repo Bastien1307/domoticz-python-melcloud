@@ -1,0 +1,12 @@
+# Bytecode
+__pycache__/
+*.py[cod]
+
+# Harnais de test et doc de travail : non publiés (contiennent la config réelle
+# du réseau domestique — MAC et IP des clims).
+tests/
+.docs/
+
+# Cache local du plugin (généré au runtime dans le dossier userdata)
+*.cache
+*.log
