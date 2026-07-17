@@ -37,12 +37,40 @@ fallback**.
 
 ## Installation
 
-1. Copy the plugin folder into `domoticz/plugins/`: `plugin.py`,
-   `melcloud_local.py`, `pymitsubishi/` (vendored lib), `icons/` (26 zips),
-   `requirements.txt`.
+1. Clone the repository into your Domoticz `plugins/` folder:
+   ```
+   cd domoticz/plugins
+   git clone https://github.com/Bastien1307/domoticz-python-melcloud.git
+   ```
+   (If you already run another MELCloud plugin, remove or rename its folder
+   first — two plugins with the same key cannot coexist.)
 2. Install the Python dependencies (see below).
-3. Restart Domoticz, enable *Accept new Hardware Devices*, then add the
-   *MELCloud plugin* hardware.
+3. Restart Domoticz.
+4. In *Setup → Settings → System*, enable **Accept new Hardware Devices**.
+5. In *Setup → Hardware*, add a new hardware of type **MELCloud plugin**, fill in
+   your MELCloud email and password, and leave the other parameters on their
+   defaults for a first run.
+6. The devices are created automatically after the first successful login. Local
+   control starts as soon as the units are discovered on the LAN (watch the log).
+
+### Upgrading
+
+```
+cd domoticz/plugins/domoticz-python-melcloud
+git pull
+```
+then restart Domoticz.
+
+### Hardware requirements
+
+The local layer talks to the **MAC-577IF-2E** Wi-Fi adapter (the standard
+Mitsubishi Electric interface fitted to many MSZ units) over plain HTTP on the
+LAN. **No hardware modification is needed** — it is the same adapter MELCloud
+uses, simply addressed locally instead of through the cloud.
+
+Other adapters (MAC-567IF-E, MAC-587IF-E…) are untested: the plugin should still
+work through the cloud path, and will fall back to it automatically if local
+control does not answer.
 
 ### Dependencies (requirements.txt)
 
