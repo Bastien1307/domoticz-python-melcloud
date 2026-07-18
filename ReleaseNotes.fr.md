@@ -2,6 +2,12 @@
 
 *[🇬🇧 English](ReleaseNotes.md) · **🇫🇷 Français***
 
+## v2.1.1 — 2026 (Bastien1307, Claude)
+
+- Intervalle de rafraîchissement cloud (Mode2) robuste au champ vide/invalide :
+  un champ vide ne plante plus `onStart` (`int('')` levait une exception), repli
+  sur 120 s comme le fait déjà l'intervalle local (Mode1).
+
 ## v2.1.0 — 2026 (Bastien1307, Claude)
 
 **Interface en français**

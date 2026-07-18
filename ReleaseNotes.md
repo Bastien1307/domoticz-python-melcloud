@@ -2,6 +2,12 @@
 
 ***🇬🇧 English** · [🇫🇷 Français](ReleaseNotes.fr.md)*
 
+## v2.1.1 — 2026 (Bastien1307, Claude)
+
+- Cloud refresh interval (Mode2) is now robust to an empty/invalid value: an
+  empty field no longer crashes `onStart` (`int('')` raised an exception),
+  falling back to 120 s like the local interval (Mode1) already did.
+
 ## v2.1.0 — 2026 (Bastien1307, Claude)
 
 **French UI**

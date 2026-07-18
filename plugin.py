@@ -1,8 +1,10 @@
 # MELCloud Plugin
 # Author: Gysmo/schurgan/Dalonsic/ChatGPT/Claude/Bastien1307, 07.2026
-# Version: 2.1.0
+# Version: 2.1.1
 #
 # Release Notes:
+# v2.1.1: Robustesse de l'intervalle cloud (Mode2) : un champ vide/invalide ne
+#         plante plus onStart (int('') -> exception), repli 120s comme Mode1.
 # v2.1.0: Interface créée au runtime traduite en français si Language = Français
 #         (noms de devices et libellés des sélecteurs : modes, ventilation,
 #         vannes, verrou télécommande, compteurs). Toute autre langue = anglais.
@@ -48,7 +50,7 @@
 #        Usefull if you use your Mitsubishi remote
 # v0.1 : Initial release
 """
-<plugin key="MELCloud" version="2.1.0" name="MELCloud plugin" author="gysmo schurgan dalonsic ChatGPT Claude Bastien1307" wikilink="http://www.domoticz.com/wiki/Plugins/MELCloud.html" externallink="http://www.melcloud.com">
+<plugin key="MELCloud" version="2.1.1" name="MELCloud plugin" author="gysmo schurgan dalonsic ChatGPT Claude Bastien1307" wikilink="http://www.domoticz.com/wiki/Plugins/MELCloud.html" externallink="http://www.melcloud.com">
     <params>
         <param field="Username" label="Email" width="200px" required="true" />
         <param field="Password" label="Password" width="200px" required="true" password="true"/>
@@ -252,6 +254,21 @@ class BasePlugin:
         return
 
     # Steap 1
+    def _cloud_refresh_seconds(self):
+        # Intervalle du poll cloud (Mode2). Robuste au champ vide/invalide :
+        # certains Domoticz ne stockent pas la valeur du menu déroulant et le
+        # renvoient vide -> int('') planterait. On retombe alors sur 120s, comme
+        # le défaut du sélecteur (même logique défensive que Mode1).
+        raw = str(Parameters.get('Mode2', '') or '').strip()
+        try:
+            seconds = int(raw)
+        except (TypeError, ValueError):
+            seconds = 0
+        if seconds <= 0:
+            Domoticz.Log("Cloud: intervalle Mode2 '{}' invalide -> 120s par défaut.".format(raw))
+            seconds = 120
+        return seconds
+
     def onStart(self):
         self.internetWasDown = False
         # ensure instance-local state
@@ -260,7 +277,7 @@ class BasePlugin:
         self.heartbeat_interval = 10  # Sekunden
         Domoticz.Heartbeat(self.heartbeat_interval)
 
-        refresh_seconds = int(Parameters['Mode2'])
+        refresh_seconds = self._cloud_refresh_seconds()
         self.runCounter = max(1, int(refresh_seconds / self.heartbeat_interval))
 
         self.dict_devices = {}
@@ -394,7 +411,7 @@ class BasePlugin:
         # Domoticz (pont Hue, etc.) via l'API locale.
         self.local.set_subnet_hints(self._lan_hints_from_domoticz())
         Domoticz.Log("Local: activé (poll {}s, cloud en secours toutes les {}s).".format(
-            seconds, Parameters['Mode2']))
+            seconds, self._cloud_refresh_seconds()))
 
         # Mode5 : mapping "mac=idx,mac=idx" pour la température distante.
         raw_map = str(Parameters.get('Mode5', '') or '').strip()
@@ -1137,7 +1154,7 @@ class BasePlugin:
         self.runCounter = self.runCounter - 1
         if (self.runCounter <= 0):
             Domoticz.Debug("Poll unit")
-            refresh_seconds = int(Parameters['Mode2'])
+            refresh_seconds = self._cloud_refresh_seconds()
             self.runCounter = max(1, int(refresh_seconds / self.heartbeat_interval))
             if (self.melcloud_conn is not None and (self.melcloud_conn.Connecting() or self.melcloud_conn.Connected())):
                if self.melcloud_state != "LOGIN_FAILED":
