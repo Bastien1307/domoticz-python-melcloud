@@ -87,8 +87,16 @@ et l'explique clairement au log.
   ```
   sudo pip3 install -r plugins/domoticz-python-melcloud/requirements.txt
   ```
-  (sur Debian récent, ajouter `--break-system-packages`, ou passer par
-  `sudo apt install python3-pycryptodome python3-requests`)
+- **Raspberry Pi / Debian récent** : pip refuse avec
+  `error: externally-managed-environment` (PEP 668). Installer les paquets via
+  apt à la place, c'est la méthode propre sur un Pi :
+  ```
+  sudo apt install python3-pycryptodome python3-requests
+  ```
+  (c'est `pycryptodome` qui compte ; `requests` est souvent déjà là.) Si tu
+  préfères garder pip, ajouter `--break-system-packages` à la commande pip
+  ci-dessus. Pour vérifier que pycryptodome est bien vu par Python :
+  `python3 -c "import Crypto; print(Crypto.__version__)"`.
 - **Domoticz en Docker** — deux options :
   - immédiat : `docker exec <conteneur> pip3 install -r /opt/domoticz/userdata/plugins/domoticz-python-melcloud/requirements.txt`
     (à refaire si le conteneur est recréé) ;
