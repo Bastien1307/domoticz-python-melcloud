@@ -25,7 +25,33 @@ import ipaddress
 import re
 import socket
 import subprocess
+import sys
 import time
+
+# Compat pycryptodome : la lib vendorée fait `from Crypto...`. Installé par pip,
+# pycryptodome fournit le namespace `Crypto` ; mais le paquet Debian/Raspberry Pi
+# `python3-pycryptodome` (apt) le fournit sous `Cryptodome` (renommé pour ne pas
+# entrer en conflit avec l'ancien pycrypto). Sans ce pont, `import Crypto` échoue
+# alors que pycryptodome EST installé -> couche locale désactivée à tort. On
+# alias donc Cryptodome -> Crypto avant l'import. La lib vendorée reste inchangée.
+if 'Crypto' not in sys.modules:
+    try:
+        import Crypto  # noqa: F401 (pip pycryptodome : namespace natif)
+    except Exception:
+        try:
+            import Cryptodome
+            import Cryptodome.Cipher
+            import Cryptodome.Cipher.AES
+            import Cryptodome.Random
+            import Cryptodome.Util.Padding
+            sys.modules['Crypto'] = Cryptodome
+            sys.modules['Crypto.Cipher'] = Cryptodome.Cipher
+            sys.modules['Crypto.Cipher.AES'] = Cryptodome.Cipher.AES
+            sys.modules['Crypto.Random'] = Cryptodome.Random
+            sys.modules['Crypto.Util'] = Cryptodome.Util
+            sys.modules['Crypto.Util.Padding'] = Cryptodome.Util.Padding
+        except Exception:
+            pass  # ni Crypto ni Cryptodome : l'import pymitsubishi ci-dessous le dira
 
 # Disponibilité de la couche locale : la lib vendorée exige requests + pycryptodome.
 LOCAL_AVAILABLE = False

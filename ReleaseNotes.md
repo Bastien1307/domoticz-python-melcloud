@@ -2,6 +2,15 @@
 
 ***🇬🇧 English** · [🇫🇷 Français](ReleaseNotes.fr.md)*
 
+## v2.1.2 — 2026 (Bastien1307, Claude)
+
+- pycryptodome compatibility: the Debian/Raspberry Pi apt package
+  (`python3-pycryptodome`) exposes the module as `Cryptodome`, not `Crypto`, so
+  `import Crypto` failed even though pycryptodome was installed — the local layer
+  was wrongly disabled and everything fell back to the cloud. A `Cryptodome` →
+  `Crypto` bridge is now set up before importing the vendored lib, so both the
+  pip and apt install methods work. (Reported by harrykausl on the forum.)
+
 ## v2.1.1 — 2026 (Bastien1307, Claude)
 
 - Cloud refresh interval (Mode2) is now robust to an empty/invalid value: an

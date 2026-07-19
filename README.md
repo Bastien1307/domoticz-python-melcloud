@@ -90,8 +90,10 @@ says so clearly in the log.
   ```
   (`pycryptodome` is the one that matters; `requests` is usually already there.)
   If you'd rather keep pip, add `--break-system-packages` to the pip command
-  above. To check pycryptodome is visible to Python:
-  `python3 -c "import Crypto; print(Crypto.__version__)"`.
+  above. The plugin accepts **either** namespace — `Crypto` (pip's pycryptodome)
+  or `Cryptodome` (Debian's `python3-pycryptodome`, which renames it) — so both
+  install methods work. To check it's visible to Python:
+  `python3 -c "import Crypto" 2>/dev/null && echo Crypto || python3 -c "import Cryptodome" && echo Cryptodome`.
 - **Domoticz in Docker** — two options:
   - quick: `docker exec <container> pip3 install -r /opt/domoticz/userdata/plugins/domoticz-python-melcloud/requirements.txt`
     (must be redone if the container is recreated);

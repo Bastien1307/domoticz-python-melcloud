@@ -1,8 +1,12 @@
 # MELCloud Plugin
 # Author: Gysmo/schurgan/Dalonsic/ChatGPT/Claude/Bastien1307, 07.2026
-# Version: 2.1.1
+# Version: 2.1.2
 #
 # Release Notes:
+# v2.1.2: Compat pycryptodome : le paquet Debian/Raspberry Pi apt fournit le
+#         module sous 'Cryptodome' (pas 'Crypto') -> la couche locale était
+#         désactivée à tort (import Crypto échoue). Pont Cryptodome->Crypto dans
+#         melcloud_local avant l'import ; les deux méthodes d'install marchent.
 # v2.1.1: Robustesse de l'intervalle cloud (Mode2) : un champ vide/invalide ne
 #         plante plus onStart (int('') -> exception), repli 120s comme Mode1.
 # v2.1.0: Interface créée au runtime traduite en français si Language = Français
@@ -50,7 +54,7 @@
 #        Usefull if you use your Mitsubishi remote
 # v0.1 : Initial release
 """
-<plugin key="MELCloud" version="2.1.1" name="MELCloud plugin" author="gysmo schurgan dalonsic ChatGPT Claude Bastien1307" wikilink="http://www.domoticz.com/wiki/Plugins/MELCloud.html" externallink="http://www.melcloud.com">
+<plugin key="MELCloud" version="2.1.2" name="MELCloud plugin" author="gysmo schurgan dalonsic ChatGPT Claude Bastien1307" wikilink="http://www.domoticz.com/wiki/Plugins/MELCloud.html" externallink="http://www.melcloud.com">
     <params>
         <param field="Username" label="Email" width="200px" required="true" />
         <param field="Password" label="Password" width="200px" required="true" password="true"/>
