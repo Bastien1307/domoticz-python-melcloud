@@ -1,3 +1,6 @@
+# Métadonnées macOS (Finder)
+.DS_Store
+
 # Bytecode
 __pycache__/
 *.py[cod]
