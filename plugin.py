@@ -1,8 +1,16 @@
 # MELCloud Plugin
 # Author: Gysmo/schurgan/Dalonsic/ChatGPT/Claude/Bastien1307, 07.2026
-# Version: 2.2.0
+# Version: 2.2.1
 #
 # Release Notes:
+# v2.2.1 : Clarté des logs. Le périmètre de recherche MELCloud n'est plus collé
+#          au texte : il est affiché entre guillemets ("Areas"/"Floors"/"Devices",
+#          clés brutes de l'API inchangées) — un « 0 climatisation dans "Floors" »
+#          est normal, les clims sont dans "Areas". Le log de rechargement du cache
+#          ne dit plus « sans cloud » (trompeur : il a lieu à chaque démarrage,
+#          avant le cloud) mais « depuis le cache local (démarrage immédiat) ».
+#          Typographie française : espace avant « : » dans tous les logs
+#          (plugin.py + melcloud_local.py).
 # v2.2.0 : Intervalles local/cloud repensés. LOCAL (Mode1) : ajout du pas 5s
 #          (interrogation locale ultra-réactive). CLOUD (Mode2) : suppression des
 #          pas trop agressifs (1s/5s/10s/20s) qui déclenchaient le throttle
@@ -81,7 +89,7 @@
 #          Usefull if you use your Mitsubishi remote
 # v0.1   : Initial release
 """
-<plugin key="MELCloud" version="2.2.0" name="MELCloud plugin" author="gysmo schurgan dalonsic ChatGPT Claude Bastien1307" wikilink="http://www.domoticz.com/wiki/Plugins/MELCloud.html" externallink="http://www.melcloud.com">
+<plugin key="MELCloud" version="2.2.1" name="MELCloud plugin" author="gysmo schurgan dalonsic ChatGPT Claude Bastien1307" wikilink="http://www.domoticz.com/wiki/Plugins/MELCloud.html" externallink="http://www.melcloud.com">
     <params>
         <param field="Username" label="Email" width="200px" required="true" />
         <param field="Password" label="Password" width="200px" required="true" password="true"/>
@@ -311,7 +319,7 @@ class BasePlugin:
         except (TypeError, ValueError):
             seconds = 0
         if seconds <= 0:
-            Domoticz.Log("Cloud: intervalle Mode2 '{}' invalide -> 300s par défaut.".format(raw))
+            Domoticz.Log("Cloud : intervalle Mode2 '{}' invalide -> 300s par défaut.".format(raw))
             seconds = 300
         return seconds
 
@@ -435,14 +443,14 @@ class BasePlugin:
                         self.domoticz_levels[map_name][level] = Images[base].ID
                         replaced += 1
             total = sum(len(m) for m in self.ICON_BASES.values())
-            Domoticz.Log("Icônes: {}/{} entrée(s) résolue(s) par nom ; zips manquants: {}".format(
+            Domoticz.Log("Icônes : {}/{} entrée(s) résolue(s) par nom ; zips manquants : {}".format(
                 replaced, total, missing_zips or "aucun"))
             if replaced < total:
-                Domoticz.Error("Icônes: résolution incomplète (Images: {}) — les niveaux "
+                Domoticz.Error("Icônes : résolution incomplète (Images : {}) — les niveaux "
                                "non résolus utilisent l'icône standard (7).".format(
                                    sorted(str(k) for k in Images)))
         except Exception as e:
-            Domoticz.Error("Icônes: résolution impossible ({}) — icônes standard (7).".format(e))
+            Domoticz.Error("Icônes : résolution impossible ({}) — icônes standard (7).".format(e))
 
     # --- Couche locale : initialisation & helpers ------------------------------
     LOCAL_REFRESH_ALLOWED = (5, 10, 20, 30, 60, 120, 300)
@@ -456,7 +464,7 @@ class BasePlugin:
 
         raw = str(Parameters.get('Mode1', '') or '').strip().lower()
         if raw == 'off':
-            Domoticz.Log("Local: désactivé (Mode1=off), fonctionnement cloud uniquement.")
+            Domoticz.Log("Local : désactivé (Mode1=off), fonctionnement cloud uniquement.")
             return
         try:
             seconds = int(raw)
@@ -465,15 +473,15 @@ class BasePlugin:
         if seconds not in self.LOCAL_REFRESH_ALLOWED:
             # Valeur héritée d'une ancienne config (ex-champ GMT Offset) ou vide :
             # on retombe sur 30s plutôt que de désactiver silencieusement.
-            Domoticz.Log("Local: intervalle Mode1 '{}' invalide -> 30s par défaut.".format(raw))
+            Domoticz.Log("Local : intervalle Mode1 '{}' invalide -> 30s par défaut.".format(raw))
             seconds = 30
 
         if melcloud_local is None:
-            Domoticz.Error("Local: module melcloud_local introuvable ({}) — cloud uniquement.".format(
+            Domoticz.Error("Local : module melcloud_local introuvable ({}) — cloud uniquement.".format(
                 globals().get('_MELCLOUD_LOCAL_IMPORT_ERROR', '?')))
             return
         if not melcloud_local.LOCAL_AVAILABLE:
-            Domoticz.Error("Local: lib pymitsubishi inutilisable ({}) — installer "
+            Domoticz.Error("Local : lib pymitsubishi inutilisable ({}) — installer "
                            "pycryptodome dans le python de Domoticz. Cloud uniquement.".format(
                                melcloud_local.LOCAL_IMPORT_ERROR))
             return
@@ -485,7 +493,7 @@ class BasePlugin:
         # LAN : on déduit le(s) sous-réseau(x) des IPs des autres matériels
         # Domoticz (pont Hue, etc.) via l'API locale.
         self.local.set_subnet_hints(self._lan_hints_from_domoticz())
-        Domoticz.Log("Local: activé (interrogation locale toutes les {}s, cloud en secours toutes les {}s).".format(
+        Domoticz.Log("Local : activé (interrogation locale toutes les {}s, cloud en secours toutes les {}s).".format(
             seconds, self._cloud_refresh_seconds()))
 
         # Mode5 : mapping "mac=idx,mac=idx" pour la température distante.
@@ -498,9 +506,9 @@ class BasePlugin:
                 try:
                     self.thermo_map[melcloud_local.norm_mac(mac)] = int(idx.strip())
                 except ValueError:
-                    Domoticz.Error("Local: entrée Mode5 invalide ignorée: '{}'".format(part))
+                    Domoticz.Error("Local : entrée Mode5 invalide ignorée : '{}'".format(part))
             if self.thermo_map:
-                Domoticz.Log("Local: température distante configurée: {}".format(self.thermo_map))
+                Domoticz.Log("Local : température distante configurée : {}".format(self.thermo_map))
 
     def _lan_hints_from_domoticz(self):
         # IPs privées des autres matériels Domoticz (gethardware) -> le vrai LAN,
@@ -552,8 +560,13 @@ class BasePlugin:
             self.list_units = units
             for u in self.list_units:
                 u['next_comm'] = False
-            Domoticz.Log("Cache: {} unité(s) rechargée(s) sans cloud: {}".format(
-                len(units), ", ".join(u.get('name', '?') for u in units)))
+            # NB : « depuis le cache local » ne veut PAS dire que le cloud est
+            # coupé — ce rechargement a lieu à CHAQUE démarrage (avant le cloud)
+            # pour un démarrage immédiat, même hors ligne. Le cloud se connecte
+            # juste après si internet est là et Mode2 != off.
+            Domoticz.Log("Cache : {} unité(s) rechargée(s) depuis le cache local "
+                         "(démarrage immédiat) : {}".format(
+                             len(units), ", ".join(u.get('name', '?') for u in units)))
         if self.local:
             self.local.set_units([{"mac": u.get('macaddr'), "name": u.get('name')}
                                   for u in self.list_units if u.get('macaddr')])
@@ -576,7 +589,7 @@ class BasePlugin:
             cfg.update(payload)
             Domoticz.Configuration(cfg)
         except Exception as e:
-            Domoticz.Debug("Cache: persistance impossible ({})".format(e))
+            Domoticz.Debug("Cache : persistance impossible ({})".format(e))
 
     def onStop(self):
         # Sécurité : ne jamais laisser des télécommandes physiquement bloquées
@@ -585,7 +598,7 @@ class BasePlugin:
         try:
             self._release_locks_on_stop()
         except Exception as e:
-            Domoticz.Error("Levée des verrous à l'arrêt impossible: {}".format(e))
+            Domoticz.Error("Levée des verrous à l'arrêt impossible : {}".format(e))
         Domoticz.Log("Arrêt du plugin MELCloud.")
 
     # Étape 3
@@ -598,7 +611,7 @@ class BasePlugin:
             # ligne 332 et SIGABRT du thread plugin. On n'accepte un onConnect
             # que si on n'est pas déjà connecté/en cours de login.
             if self.melcloud_state not in ("Not Ready", "LOGIN_FAILED"):
-                Domoticz.Log("MELCloud: connexion supplémentaire ignorée (état {})".format(self.melcloud_state))
+                Domoticz.Log("MELCloud : connexion supplémentaire ignorée (état {})".format(self.melcloud_state))
                 return
             Domoticz.Log("MELCloud connexion OK")
             self.melcloud_state = "READY"
@@ -631,7 +644,7 @@ class BasePlugin:
         has_meter = dev.get("HasEnergyConsumedMeter", False)
         raw = dev.get("CurrentEnergyConsumed", None)
 
-        Domoticz.Debug("EnergyCheck: {} (DeviceID {}) HasEnergyConsumedMeter={} RawCurrentEnergyConsumed={}".format(
+        Domoticz.Debug("EnergyCheck : {} (DeviceID {}) HasEnergyConsumedMeter={} RawCurrentEnergyConsumed={}".format(
             name, did, has_meter, raw
         ))
 
@@ -653,7 +666,7 @@ class BasePlugin:
         def oneUnit(self, device, idoffset, nr_of_Units, cEnergyConsumed, building, scope):
             self.melcloud_add_unit(device, idoffset)
             dev = device.get("Device", {})
-            Domoticz.Debug("DeviceLinkCheck {} (DeviceID {}): keys={}".format(
+            Domoticz.Debug("DeviceLinkCheck {} (DeviceID {}) : keys={}".format(
                 device.get("DeviceName","?"),
                 device.get("DeviceID","?"),
                 sorted(list(dev.keys()))
@@ -662,7 +675,7 @@ class BasePlugin:
             nr_of_Units += 1
             currentEnergyConsumed = self.extractDeviceData(device)
             cEnergyConsumed += currentEnergyConsumed
-            Domoticz.Log("Trouvé {} dans le bâtiment {} {} | Consommation : {:.3f} kWh".format(
+            Domoticz.Log("Trouvé {} dans le bâtiment {} \"{}\" | Consommation : {:.3f} kWh".format(
                 device.get("DeviceName", "?"),
                 building.get("Name", "?"),
                 scope,
@@ -687,7 +700,7 @@ class BasePlugin:
                                                                    nr_of_Units, cEnergyConsumed,
                                                                    building, scope)
 
-        text2log = u'Trouvé {} climatisation(s) (Type 0) dans le bâtiment {} {}, consommation cumulée {:.0f} kWh'
+        text2log = u'Trouvé {} climatisation(s) (Type 0) dans le bâtiment {} "{}", consommation cumulée {:.0f} kWh'
         text2log = text2log.format(str(nr_of_Units), building["Name"], scope, cEnergyConsumed)
         Domoticz.Log(text2log)
 
@@ -721,7 +734,7 @@ class BasePlugin:
                 # les clés du dict et building["Structure"] lève TypeError
                 # -> exception non gérée ayant provoqué des SIGABRT.
                 if not isinstance(response, list):
-                    Domoticz.Error("UNITS_INIT: réponse inattendue (type {}), ignorée.".format(type(response).__name__))
+                    Domoticz.Error("UNITS_INIT : réponse inattendue (type {}), ignorée.".format(type(response).__name__))
                     return
                 # Repartir d'une liste propre : évite les doublons d'unités
                 # (clim traitée 2x) si un re-login survient.
@@ -757,7 +770,7 @@ class BasePlugin:
             elif self.melcloud_state == "UNIT_INFO":
                 # Garde anti-crash : ne traiter que le petit dict attendu.
                 if not isinstance(response, dict) or 'DeviceID' not in response:
-                    Domoticz.Error("UNIT_INFO: réponse inattendue, ignorée.")
+                    Domoticz.Error("UNIT_INFO : réponse inattendue, ignorée.")
                     return
                 for unit in self.list_units:
                     if unit['id'] == response['DeviceID']:
@@ -782,7 +795,7 @@ class BasePlugin:
                         op_mode = response['OperationMode']
                         set_temp = response['SetTemperature']
                         if op_mode not in (1, 2, 3, 7, 8) or set_temp is None or set_temp <= 0:
-                            Domoticz.Debug("Trame rejetée {0}: OperationMode={1} SetTemperature={2}".format(
+                            Domoticz.Debug("Trame rejetée {0} : OperationMode={1} SetTemperature={2}".format(
                                 unit['name'], op_mode, set_temp))
                             self._update_room_temp(unit)
                             break
@@ -800,7 +813,7 @@ class BasePlugin:
                         break
             elif self.melcloud_state == "SET":
                 if not isinstance(response, dict) or 'DeviceID' not in response:
-                    Domoticz.Error("SET: réponse inattendue, ignorée.")
+                    Domoticz.Error("SET : réponse inattendue, ignorée.")
                     return
                 for unit in self.list_units:
                     if unit['id'] == response['DeviceID']:
@@ -820,7 +833,7 @@ class BasePlugin:
                 # que dans ListDevices). On met à jour energy_wh par clim SANS
                 # reconstruire list_units, puis on synchronise les compteurs kWh.
                 if not isinstance(response, list):
-                    Domoticz.Error("ENERGY_REFRESH: réponse inattendue, ignorée.")
+                    Domoticz.Error("ENERGY_REFRESH : réponse inattendue, ignorée.")
                     return
                 for dev in self._iter_ata_devices(response):
                     did = dev.get("DeviceID")
@@ -980,7 +993,7 @@ class BasePlugin:
         try:
             ok = self.local.command(unit['macaddr'], **kwargs)
         except Exception as e:
-            Domoticz.Error("Local: commande {} en échec ({}) -> bascule cloud".format(
+            Domoticz.Error("Local : commande {} en échec ({}) -> bascule cloud".format(
                 unit.get('name'), e))
             return False
         if ok:
@@ -1079,7 +1092,7 @@ class BasePlugin:
                 try:
                     ok = self.local.set_remote_lock(unit['macaddr'], flags)
                 except Exception as e:
-                    Domoticz.Error("Local: verrou télécommande {} en échec: {}".format(
+                    Domoticz.Error("Local : verrou télécommande {} en échec : {}".format(
                         unit.get('name'), e))
                 if ok:
                     Domoticz.Log("Verrou télécommande {} -> flags {}".format(unit['name'], flags))
@@ -1091,7 +1104,7 @@ class BasePlugin:
         return True
 
     def onNotification(self, Name, Subject, Text, Status, Priority, Sound, ImageFile):
-        Domoticz.Log("Notification: " + Name + "," + Subject + "," + Text + "," +
+        Domoticz.Log("Notification : " + Name + "," + Subject + "," + Text + "," +
                      Status + "," + str(Priority) + "," + Sound + "," + ImageFile)
 
     def onDisconnect(self, Connection):
@@ -1112,7 +1125,7 @@ class BasePlugin:
             if 'result' in data and len(data['result']) > 0:
                 return data['result'][0]['Status']  # Devrait être 'On' ou 'Off'
         except Exception as e:
-            Domoticz.Error('Erreur en lisant le statut Internet via device {}: {}'.format(idx, str(e)))
+            Domoticz.Error('Erreur en lisant le statut Internet via device {} : {}'.format(idx, str(e)))
         return 'Off'
 
     def getDomoticzDeviceTemp(self, idx):
@@ -1128,7 +1141,7 @@ class BasePlugin:
                 if temp is not None:
                     return float(temp)
         except Exception as e:
-            Domoticz.Debug('Thermomètre idx {} illisible: {}'.format(idx, str(e)))
+            Domoticz.Debug('Thermomètre idx {} illisible : {}'.format(idx, str(e)))
         return None
 
     # --- Couche locale : heartbeat -------------------------------------------
@@ -1168,7 +1181,7 @@ class BasePlugin:
         try:
             self.local.discovery_step()
         except Exception as e:
-            Domoticz.Error("Local: discovery_step a échoué: {}".format(e))
+            Domoticz.Error("Local : discovery_step a échoué : {}".format(e))
 
         self.localRunCounter -= 1
         if self.localRunCounter > 0:
@@ -1183,7 +1196,7 @@ class BasePlugin:
             try:
                 state = self.local.poll(mac)
             except Exception as e:
-                Domoticz.Error("Local: interrogation de {} a échoué: {}".format(unit.get('name'), e))
+                Domoticz.Error("Local : interrogation de {} a échoué : {}".format(unit.get('name'), e))
             if not state:
                 continue  # local down -> le chemin cloud prendra le relais
             self._local_sync_unit(unit, state)
@@ -1200,7 +1213,7 @@ class BasePlugin:
                     # inf. en chaud) : la clim ignore les dixièmes.
                     temp_inj = self._round_remote_temp(temp, unit.get('op_mode'))
                     if self.local.inject_room_temp(mac, temp_inj):
-                        Domoticz.Debug("Local: {} régule sur {}°C (mesuré {}°C, thermo idx {})".format(
+                        Domoticz.Debug("Local : {} régule sur {}°C (mesuré {}°C, thermo idx {})".format(
                             unit.get('name'), temp_inj, temp, idx))
 
         # Persistance du cache d'IP quand il change (découverte/révocation).
@@ -1315,7 +1328,7 @@ class BasePlugin:
                 Domoticz.Device(Name=name, Unit=u, Type=242, Subtype=1, Used=1).Create()
             else:
                 Domoticz.Device(Name=name, Unit=u, TypeName=switch["typename"], Used=1).Create()
-            Domoticz.Log("Device (re)créé: {} (Unit {})".format(name, u))
+            Domoticz.Log("Device (re)créé : {} (Unit {})".format(name, u))
 
     def melcloud_create_units(self, sync_energy=True):
         Domoticz.Log("Infos des unités : " + str(self.list_units))
@@ -1349,7 +1362,7 @@ class BasePlugin:
         # c'est la garde qui empêche les connexions parallèles à l'origine des
         # "connexion OK" en double, de la désync d'état et du SIGABRT.
         if self.melcloud_conn is not None and (self.melcloud_conn.Connecting() or self.melcloud_conn.Connected()):
-            Domoticz.Debug("MELCloud: connexion déjà vivante, pas de nouvelle ouverture")
+            Domoticz.Debug("MELCloud : connexion déjà vivante, pas de nouvelle ouverture")
             return False
         self.melcloud_key = None
         self.melcloud_state = "Not Ready"
@@ -1638,7 +1651,7 @@ class BasePlugin:
         else:
             # nouveau candidat -> on attend une 2e confirmation, on n'écrit pas
             unit['_mode_pending'] = key
-            Domoticz.Debug("Mode debounce {0}: '{1}' en attente de confirmation".format(unit['name'], sValue))
+            Domoticz.Debug("Mode debounce {0} : '{1}' en attente de confirmation".format(unit['name'], sValue))
 
     def domoticz_sync_switchs(self, unit):
         # Garantit d'abord que les devices de l'unité existent : l'utilisateur

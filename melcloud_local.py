@@ -146,7 +146,7 @@ class LocalLayer:
             except ValueError:
                 continue
         if self._subnet_hints:
-            self.debug("Local: sous-réseaux suggérés: {}".format(
+            self.debug("Local : sous-réseaux suggérés : {}".format(
                 ", ".join(str(n) for n in self._subnet_hints)))
 
     # ------------------------------------------------------------------ setup --
@@ -164,7 +164,7 @@ class LocalLayer:
             mac = norm_mac(mac)
             if mac in self.units and ip:
                 self.units[mac]["ip"] = str(ip)
-                self.debug("Local: IP cache {} -> {}".format(mac, ip))
+                self.debug("Local : IP cache {} -> {}".format(mac, ip))
 
     def get_ips(self):
         """Cache MAC->IP courant (à persister via Domoticz.Configuration)."""
@@ -267,7 +267,7 @@ class LocalLayer:
     def _adopt(self, mac, ip):
         self.units[mac]["ip"] = ip
         self.units[mac]["fail"] = 0
-        self.log("Local: clim {} trouvée en {} (vérifiée par MAC)".format(
+        self.log("Local : clim {} trouvée en {} (vérifiée par MAC)".format(
             self.units[mac]["name"], ip))
 
     def discovery_step(self, max_probes=8):
@@ -297,10 +297,10 @@ class LocalLayer:
             for net in subnets:
                 self._scan_pool.extend(str(h) for h in net.hosts())
             if not self._scan_pool:
-                self.error("Local: impossible de deviner le sous-réseau (conteneur "
+                self.error("Local : impossible de deviner le sous-réseau (conteneur "
                            "isolé ?) — découverte suspendue jusqu'au prochain cycle.")
                 return False
-            self.log("Local: cycle de scan {} ({} adresses : {})".format(
+            self.log("Local : cycle de scan {} ({} adresses : {})".format(
                 self._scan_round, len(self._scan_pool),
                 ", ".join(str(n) for n in subnets)))
 
@@ -326,7 +326,7 @@ class LocalLayer:
         mac = norm_mac(mac)
         u = self.units.get(mac)
         if u and u["ip"]:
-            self.log("Local: IP {} de {} révoquée (ne répond plus)".format(
+            self.log("Local : IP {} de {} révoquée (ne répond plus)".format(
                 u["ip"], u["name"]))
             u["ip"] = None
             u["fail"] = 0
@@ -361,7 +361,7 @@ class LocalLayer:
             got = norm_mac(getattr(state, "mac", "") or "")
             if verify_mac and got and got != mac:
                 # L'IP a changé de propriétaire (DHCP) : révoquer, ne rien envoyer.
-                self.error("Local: MAC inattendue en {} (attendu {}, lu {}) — IP révoquée".format(
+                self.error("Local : MAC inattendue en {} (attendu {}, lu {}) — IP révoquée".format(
                     u["ip"], mac, got))
                 self.revoke_ip(mac)
                 return None
@@ -371,10 +371,10 @@ class LocalLayer:
             return result
         except Exception as e:
             u["fail"] += 1
-            self.debug("Local: échec {} ({}/{}) sur {}: {}".format(
+            self.debug("Local : échec {} ({}/{}) sur {} : {}".format(
                 u["name"], u["fail"], self.FAIL_THRESHOLD, u["ip"], e))
             if u["fail"] == self.FAIL_THRESHOLD:
-                self.log("Local: {} injoignable en local — bascule cloud (retentatives périodiques)".format(
+                self.log("Local : {} injoignable en local — bascule cloud (retentatives périodiques)".format(
                     u["name"]))
             return None
         finally:

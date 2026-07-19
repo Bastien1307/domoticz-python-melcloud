@@ -2,6 +2,20 @@
 
 ***🇬🇧 English** · [🇫🇷 Français](ReleaseNotes.fr.md)*
 
+## v2.2.1 — 2026 (Bastien1307, Claude)
+
+- **Clearer logs.**
+- The MELCloud **search scope** is now shown **in quotes** (`"Devices"` /
+  `"Areas"` / `"Floors"` — raw API keys, unchanged) instead of being glued to the
+  text. Seeing `0 climatisation(s) … "Floors"` is **normal** — the units live
+  under `"Areas"`.
+- The cache-reload log no longer says « **sans cloud** » (misleading: it happens
+  on **every** startup, before the cloud) but « **depuis le cache local
+  (démarrage immédiat)** ». The cloud connects right after if internet is up and
+  `Mode2 ≠ off`.
+- **French typography**: a space before « : » in all logs (plugin.py +
+  melcloud_local.py).
+
 ## v2.2.0 — 2026 (Bastien1307, Claude)
 
 - **Local and cloud intervals reworked.**

@@ -2,6 +2,20 @@
 
 *[🇬🇧 English](ReleaseNotes.md) · **🇫🇷 Français***
 
+## v2.2.1 — 2026 (Bastien1307, Claude)
+
+- **Clarté des logs.**
+- Le **périmètre de recherche** MELCloud est désormais affiché **entre
+  guillemets** (`"Devices"` / `"Areas"` / `"Floors"` — clés brutes de l'API,
+  inchangées) au lieu d'être collé au texte. Voir `0 climatisation(s) dans
+  "Floors"` est **normal** : les clims sont rangées dans `"Areas"` (les zones).
+- Le log de rechargement du cache ne dit plus « **sans cloud** » (trompeur : il a
+  lieu à **chaque** démarrage, avant le cloud) mais « **depuis le cache local
+  (démarrage immédiat)** ». Le cloud se connecte juste après si internet est là
+  et `Mode2 ≠ off`.
+- **Typographie française** : espace avant « : » dans tous les logs (plugin.py +
+  melcloud_local.py).
+
 ## v2.2.0 — 2026 (Bastien1307, Claude)
 
 - **Intervalles local et cloud repensés.**
