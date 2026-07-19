@@ -14,7 +14,7 @@ fallback**.
 
 ## Features
 
-- **Real-time local control** (poll from 10 s to 5 min): power, mode, setpoint,
+- **Real-time local control** (poll from 5 s to 5 min): power, mode, setpoint,
   fan speed, vanes — no cloud round-trip, near-zero latency, and it keeps
   working **without an internet connection** (units + IP cache is persisted).
 - **Automatic MELCloud fallback**: if a unit stops answering on the LAN, it is
@@ -106,11 +106,23 @@ says so clearly in the log.
 | Field | Purpose |
 |---|---|
 | Email / Password | MELCloud account (used for the initial startup and the cloud fallback) |
-| Refresh interval wifi (local) | local poll rate (default 30 s; `Off` = cloud only) |
-| Refresh interval web (cloud) | fallback cloud poll rate (5 min recommended) |
+| Refresh interval wifi (local) | local poll rate — 5 s to 5 min (default **30 s**); `Off` = cloud only |
+| Refresh interval web (cloud) | fallback cloud poll rate — 1 min to 10 min (default **5 min**); `Off` = cloud disabled (see below) |
 | Remote temp | optional: `mac=idx,mac=idx` — Domoticz thermometer per unit (remote temperature) |
 | Language / Debug | MELCloud language / log level |
 | ID device Internet | optional: Domoticz device reflecting internet connectivity (only suspends the cloud path) |
+
+> **Cloud set to `Off`.** Even with the cloud disabled, the plugin still uses it
+> **once at startup** to **discover the units** (list + MAC addresses) — a
+> mandatory step, including for a fresh install. **After that the cloud goes
+> completely silent**: no more requests at all, **energy included**
+> (`ListDevices`/30 min); everything runs through the local layer and the cache.
+>
+> The cloud poll deliberately starts at **1 minute**: shorter intervals trigger
+> MELCloud throttling (temporary account lockout).
+>
+> If **both local and cloud** are `Off`, this is allowed but **no data is
+> refreshed anymore** after discovery (a warning is logged at startup).
 
 ## Devices created (per unit)
 

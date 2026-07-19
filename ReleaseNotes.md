@@ -2,6 +2,36 @@
 
 ***🇬🇧 English** · [🇫🇷 Français](ReleaseNotes.fr.md)*
 
+## v2.2.0 — 2026 (Bastien1307, Claude)
+
+- **Local and cloud intervals reworked.**
+- **Local (`Refresh interval wifi (local)`)**: added a **5s** step for
+  ultra-responsive local polling (allowed values: 5s, 10s, 20s, 30s *(default)*,
+  1m, 2m, 5m, or `Off`).
+- **Cloud (`Refresh interval web (cloud)`)**: **removed the overly aggressive
+  steps** (1s / 5s / 10s / 20s) that triggered MELCloud throttling (temporary
+  account lockout). The cloud now starts at **1 minute**, defaulting to **5 min**
+  (values: 1m, 2m, 5m *(default)*, 10m, or `Off`).
+- **New "Off" option for the cloud** (the local one already had one), with an
+  important behaviour to understand:
+  - At **startup**, the cloud is used **exactly once** to **discover the air
+    conditioners** (unit list + MAC addresses). This step is mandatory: without
+    it, a **fresh install** could never find the units (the local layer needs the
+    MACs to target the adapters).
+  - **Once discovery is done**, the cloud goes **completely silent**: **no** more
+    cloud requests at all, **including energy** (the 30-min `ListDevices` refresh
+    is disabled too) and no more reconnection attempts. Everything then runs
+    through the **local** layer and the persisted **cache**.
+  - **Optimisation**: at startup, if the **cache already holds every unit with
+    its MAC**, cloud discovery is **skipped entirely** — the plugin is muted from
+    the very start, without a single `login`/`ListDevices`. The cloud is thus
+    only really used on the **first** install (empty cache) or after adding a new
+    unit. (The kWh meters are left untouched on this path: the local layer fills
+    them in afterwards.)
+- **Both local and cloud off** (`Mode1=off` + `Mode2=off`): this is allowed, but
+  a **clear warning** (`Domoticz.Error`) is logged at startup — after the initial
+  discovery, **no** data is refreshed anymore.
+
 ## v2.1.4 — 2026 (Bastien1307, Claude)
 
 - **Logs are now entirely in French**, **fixed** (independent of the `Language`

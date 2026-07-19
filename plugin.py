@@ -1,8 +1,21 @@
 # MELCloud Plugin
 # Author: Gysmo/schurgan/Dalonsic/ChatGPT/Claude/Bastien1307, 07.2026
-# Version: 2.1.4
+# Version: 2.2.0
 #
 # Release Notes:
+# v2.2.0 : Intervalles local/cloud repensés. LOCAL (Mode1) : ajout du pas 5s
+#          (interrogation locale ultra-réactive). CLOUD (Mode2) : suppression des
+#          pas trop agressifs (1s/5s/10s/20s) qui déclenchaient le throttle
+#          MELCloud -> le cloud commence désormais à 1 min (défaut 5 min). Ajout
+#          d'une option « Off » sur le cloud (comme le local) : quand Mode2=off,
+#          le cloud est utilisé UNE SEULE FOIS au démarrage pour DÉCOUVRIR les
+#          clims (liste + adresses MAC), puis devient TOTALEMENT muet — plus
+#          aucune requête cloud, y compris l'énergie (ListDevices/30 min). Tout
+#          passe alors par le local + le cache. Sans cette découverte initiale,
+#          une première installation ne pourrait pas trouver les unités. Si le
+#          local ET le cloud sont coupés (Mode1=off + Mode2=off), un avertissement
+#          clair est logué au démarrage : après la découverte, plus rien ne se
+#          rafraîchit (accepté).
 # v2.1.4 : Logs entièrement en français (fixe, indépendant du paramètre Language).
 #          Toutes les lignes de log encore anglaises ou mixtes (plugin.py +
 #          melcloud_local.py) sont traduites : connexion, découverte des
@@ -68,16 +81,17 @@
 #          Usefull if you use your Mitsubishi remote
 # v0.1   : Initial release
 """
-<plugin key="MELCloud" version="2.1.4" name="MELCloud plugin" author="gysmo schurgan dalonsic ChatGPT Claude Bastien1307" wikilink="http://www.domoticz.com/wiki/Plugins/MELCloud.html" externallink="http://www.melcloud.com">
+<plugin key="MELCloud" version="2.2.0" name="MELCloud plugin" author="gysmo schurgan dalonsic ChatGPT Claude Bastien1307" wikilink="http://www.domoticz.com/wiki/Plugins/MELCloud.html" externallink="http://www.melcloud.com">
     <params>
         <param field="Username" label="Email" width="200px" required="true" />
         <param field="Password" label="Password" width="200px" required="true" password="true"/>
         <param field="Mode1" label="Refresh interval wifi (local)" width="100px">
             <options>
                 <option label="Off (cloud only)" value="off"/>
+                <option label="5s" value="5"/>
                 <option label="10s" value="10"/>
                 <option label="20s" value="20"/>
-                <option label="30s" value="30" default="true"/>
+                <option label="30s (default)" value="30" default="true"/>
                 <option label="1m" value="60"/>
                 <option label="2m" value="120"/>
                 <option label="5m" value="300"/>
@@ -86,13 +100,10 @@
         <param field="Mode5" label="Remote temp (mac=idx,mac=idx — optionnel)" width="300px" required="false" />
         <param field="Mode2" label="Refresh interval web (cloud)" width="100px">
             <options>
-                <option label="1s" value="1"/>
-                <option label="5s" value="5"/>
-                <option label="10s" value="10"/>
-                <option label="20s - local" value="20"/>
+                <option label="Off (discovery at startup, then muted)" value="off"/>
                 <option label="1m" value="60"/>
-                <option label="2m" value="120" default="true"/>
-                <option label="5m - web" value="300"/>
+                <option label="2m" value="120"/>
+                <option label="5m (default)" value="300" default="true"/>
                 <option label="10m" value="600"/>
             </options>
         </param>
@@ -272,19 +283,36 @@ class BasePlugin:
         return
 
     # Étape 1
+    def _cloud_disabled(self):
+        # Cloud coupé (Mode2=off) : la découverte des clims se fait quand même UNE
+        # fois au démarrage (login + ListDevices), puis plus aucune requête cloud
+        # (ni interrogation d'unités, ni énergie). Voir self.cloud_muted.
+        return str(Parameters.get('Mode2', '') or '').strip().lower() == 'off'
+
+    def _cache_units_complete(self):
+        # Vrai si le cache a rechargé au moins une unité ET que TOUTES ont leur
+        # MAC : le local peut alors tout piloter, la redécouverte cloud est
+        # inutile. Sert à rester muet dès le démarrage quand Mode2=off.
+        return bool(self.list_units) and all(u.get('macaddr') for u in self.list_units)
+
     def _cloud_refresh_seconds(self):
         # Intervalle d'interrogation cloud (Mode2). Robuste au champ vide/invalide :
         # certains Domoticz ne stockent pas la valeur du menu déroulant et le
-        # renvoient vide -> int('') planterait. On retombe alors sur 120s, comme
-        # le défaut du sélecteur (même logique défensive que Mode1).
+        # renvoient vide -> int('') planterait. On retombe alors sur 300s, comme
+        # le défaut du sélecteur (même logique défensive que Mode1). Quand le cloud
+        # est coupé (Mode2=off), cette valeur n'est de toute façon plus utilisée
+        # une fois la découverte faite (cloud_muted) : on renvoie le défaut sans
+        # loguer d'avertissement « invalide ».
         raw = str(Parameters.get('Mode2', '') or '').strip()
+        if raw.lower() == 'off':
+            return 300
         try:
             seconds = int(raw)
         except (TypeError, ValueError):
             seconds = 0
         if seconds <= 0:
-            Domoticz.Log("Cloud: intervalle Mode2 '{}' invalide -> 120s par défaut.".format(raw))
-            seconds = 120
+            Domoticz.Log("Cloud: intervalle Mode2 '{}' invalide -> 300s par défaut.".format(raw))
+            seconds = 300
         return seconds
 
     def onStart(self):
@@ -310,6 +338,10 @@ class BasePlugin:
         self.melcloud_key = None
         self.melcloud_state = "Not Ready"
 
+        # Cloud coupé (Mode2=off) : passe à True une fois la découverte initiale
+        # faite -> plus aucune requête cloud (unités + énergie + reconnexion).
+        self.cloud_muted = False
+
         try:
             Domoticz.Debugging(int(Parameters["Mode6"]))
         except Exception:
@@ -324,11 +356,36 @@ class BasePlugin:
         # sans internet/cloud (l'utilisateur peut avoir coupé sa box).
         self._load_config_cache()
 
+        # Avertissement si AUCUNE source de rafraîchissement ne restera active :
+        # pas de couche locale opérante (self.local is None : Mode1=off, module
+        # absent OU pycryptodome manquant) ET cloud coupé (Mode2=off). Message
+        # basé sur le RÉSULTAT plutôt que sur un paramètre précis, pour rester
+        # juste quelle que soit la cause de l'absence de local.
+        if self.local is None and self._cloud_disabled():
+            Domoticz.Error("Aucune source de données active : local indisponible "
+                           "(voir les logs 'Local:' ci-dessus) ET cloud coupé "
+                           "(Mode2=off). Après la découverte initiale des clims, "
+                           "plus AUCUNE donnée ne sera rafraîchie. Activez le local "
+                           "(Mode1) ou le cloud (Mode2).")
+
         # ---------------- Cloud MELCloud (chemin historique) -------------------
         # Le check internet (Mode4) ne bloque QUE le cloud : le local n'en a
         # pas besoin. S'il n'y a pas d'internet, le heartbeat tentera plus tard.
         self.melcloud_conn = None
-        if self._internet_ok():
+        if self._cloud_disabled() and self._cache_units_complete():
+            # Cloud coupé + cache déjà complet (toutes les unités ont leur MAC) :
+            # inutile de rouvrir le cloud pour redécouvrir. On garantit les
+            # devices depuis le cache (sans toucher aux compteurs kWh) et on
+            # reste muet dès le démarrage. La découverte cloud ne servira donc
+            # qu'à la 1re install (cache vide) ou après ajout d'une clim.
+            self.cloud_muted = True
+            self.melcloud_create_units(sync_energy=False)
+            Domoticz.Log("Cloud coupé (Mode2=off) : {} unité(s) déjà en cache "
+                         "(MAC connues), découverte cloud ignorée. Cloud muet dès "
+                         "le démarrage.".format(len(self.list_units)))
+        elif self._internet_ok():
+            # NB : même Mode2=off ouvre la connexion ici si le cache est vide
+            # (1re install) -> découverte des unités, puis passage muet.
             self._start_connection()
         return True
 
@@ -388,7 +445,7 @@ class BasePlugin:
             Domoticz.Error("Icônes: résolution impossible ({}) — icônes standard (7).".format(e))
 
     # --- Couche locale : initialisation & helpers ------------------------------
-    LOCAL_REFRESH_ALLOWED = (10, 20, 30, 60, 120, 300)
+    LOCAL_REFRESH_ALLOWED = (5, 10, 20, 30, 60, 120, 300)
 
     def _init_local_layer(self):
         self.local = None
@@ -683,6 +740,20 @@ class BasePlugin:
                     # Recherche dans les étages
                     (nr_of_Units, idoffset, cEnergyConsumed) = self.searchUnits(building, "Floors", idoffset)
                 self.melcloud_create_units()
+                # Cloud coupé (Mode2=off) : la découverte est faite (liste + MAC),
+                # on coupe TOUT le cloud (unités, énergie, reconnexion). Tout le
+                # reste passe désormais par le local + le cache.
+                if self._cloud_disabled():
+                    self.cloud_muted = True
+                    Domoticz.Log("Cloud coupé (Mode2=off) : découverte terminée "
+                                 "({} unité(s)). Plus aucune requête cloud (ni énergie).".format(
+                                     len(self.list_units)))
+                    if self.melcloud_conn is not None and (
+                            self.melcloud_conn.Connecting() or self.melcloud_conn.Connected()):
+                        self.melcloud_conn.Disconnect()
+                    self.melcloud_conn = None
+                    self.melcloud_state = "Not Ready"
+                    self.melcloud_key = None
             elif self.melcloud_state == "UNIT_INFO":
                 # Garde anti-crash : ne traiter que le petit dict attendu.
                 if not isinstance(response, dict) or 'DeviceID' not in response:
@@ -1169,6 +1240,13 @@ class BasePlugin:
         self._local_heartbeat()
 
         # ---------------- CLOUD (secours) ---------------------------------------
+        # Cloud coupé (Mode2=off) ET découverte déjà faite : plus rien côté cloud
+        # (aucune interrogation d'unité, aucun rafraîchissement d'énergie, aucune
+        # reconnexion). Tant que la découverte n'a pas abouti, cloud_muted reste
+        # False -> la connexion/découverte initiale continue d'être tentée.
+        if self.cloud_muted:
+            return
+
         if not self._internet_ok():
             return
 
@@ -1239,7 +1317,7 @@ class BasePlugin:
                 Domoticz.Device(Name=name, Unit=u, TypeName=switch["typename"], Used=1).Create()
             Domoticz.Log("Device (re)créé: {} (Unit {})".format(name, u))
 
-    def melcloud_create_units(self):
+    def melcloud_create_units(self, sync_energy=True):
         Domoticz.Log("Infos des unités : " + str(self.list_units))
         # Création idempotente, par unité : on (re)crée uniquement les devices
         # manquants. Avant, le bloc était gardé par len(Devices)==0 -> si
@@ -1250,7 +1328,12 @@ class BasePlugin:
         # Compteurs kWh : création si absents (installs neuves ET existantes)
         # puis renseignement des valeurs déjà connues via ListDevices.
         self._ensure_energy_devices()
-        self._sync_energy_devices()
+        # sync_energy=False sur le chemin « cache seul » (cloud coupé au démarrage) :
+        # le cache ne stocke PAS energy_wh, donc synchroniser écrirait 0 Wh et
+        # écraserait les compteurs cumulés en base. On laisse le LOCAL renseigner
+        # les vraies valeurs (power_w/energy_wh) au premier heartbeat local.
+        if sync_energy:
+            self._sync_energy_devices()
         self._ensure_lock_devices()
         # Couche locale : (re)déclare les unités (MAC) et persiste le cache
         # unités+IP pour les démarrages sans cloud.

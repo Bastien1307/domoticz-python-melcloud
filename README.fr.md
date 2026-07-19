@@ -15,7 +15,7 @@ secours**.
 
 ## Fonctionnalités
 
-- **Contrôle local temps réel** (poll 10 s à 5 min, au choix) : marche/arrêt,
+- **Contrôle local temps réel** (poll 5 s à 5 min, au choix) : marche/arrêt,
   mode, consigne, ventilation, vannes — sans passer par le cloud, latence quasi
   nulle, fonctionne **même sans internet** (cache unités + IP persisté).
 - **Cloud MELCloud en secours** automatique : si une clim ne répond plus en
@@ -112,11 +112,23 @@ et l'explique clairement au log.
 | Champ | Rôle |
 |---|---|
 | Email / Password | compte MELCloud (sert au démarrage initial et au secours cloud) |
-| Refresh interval wifi (local) | cadence du poll local (défaut 30 s ; `Off` = cloud uniquement) |
-| Refresh interval web (cloud) | cadence du poll cloud de secours (5 m conseillé) |
+| Refresh interval wifi (local) | cadence du poll local — 5 s à 5 m (défaut **30 s**) ; `Off` = cloud uniquement |
+| Refresh interval web (cloud) | cadence du poll cloud de secours — 1 m à 10 m (défaut **5 m**) ; `Off` = cloud coupé (voir ci-dessous) |
 | Remote temp | optionnel : `mac=idx,mac=idx` — thermomètre Domoticz par clim (température distante) |
 | Language / Debug | langue MELCloud / niveau de log |
 | ID device Internet | optionnel : device Domoticz témoin de la connexion internet (ne suspend que le cloud) |
+
+> **Cloud sur `Off`.** Même cloud coupé, le plugin l'utilise **une seule fois au
+> démarrage** pour **découvrir les clims** (liste + adresses MAC) — étape
+> indispensable, y compris pour une première installation. **Ensuite le cloud
+> devient totalement muet** : plus aucune requête, **énergie comprise**
+> (`ListDevices`/30 min), tout passe par le local et le cache.
+>
+> Le poll cloud commence volontairement à **1 minute** : des intervalles plus
+> courts déclenchent le *throttle* MELCloud (blocage temporaire du compte).
+>
+> Si **local ET cloud** sont sur `Off`, c'est accepté mais **plus aucune donnée
+> n'est rafraîchie** après la découverte (un avertissement est logué au démarrage).
 
 ## Devices créés (par clim)
 

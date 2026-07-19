@@ -2,6 +2,36 @@
 
 *[🇬🇧 English](ReleaseNotes.md) · **🇫🇷 Français***
 
+## v2.2.0 — 2026 (Bastien1307, Claude)
+
+- **Intervalles local et cloud repensés.**
+- **Local (`Refresh interval wifi (local)`)** : ajout du pas **5s** pour une
+  interrogation locale ultra-réactive (valeurs autorisées : 5s, 10s, 20s, 30s
+  *(défaut)*, 1m, 2m, 5m, ou `Off`).
+- **Cloud (`Refresh interval web (cloud)`)** : **suppression des pas trop
+  agressifs** (1s / 5s / 10s / 20s) qui déclenchaient le *throttle* MELCloud
+  (blocage temporaire du compte). Le cloud commence désormais à **1 minute**,
+  avec **5 min par défaut** (valeurs : 1m, 2m, 5m *(défaut)*, 10m, ou `Off`).
+- **Nouvelle option « Off » sur le cloud** (comme le local en avait déjà une),
+  avec un comportement important à comprendre :
+  - Au **démarrage**, le cloud est utilisé **une seule fois** pour **découvrir
+    les climatiseurs** (liste des unités + adresses MAC). Cette étape est
+    indispensable : sans elle, une **première installation** ne pourrait jamais
+    trouver les unités (le local a besoin des MAC pour cibler les adaptateurs).
+  - **Une fois la découverte faite**, le cloud devient **totalement muet** :
+    plus **aucune** requête cloud, **y compris l'énergie** (le rafraîchissement
+    `ListDevices` toutes les 30 min est lui aussi coupé) et plus aucune tentative
+    de reconnexion. Tout passe alors par le **local** et le **cache** persisté.
+  - **Optimisation** : au démarrage, si le **cache contient déjà toutes les
+    unités avec leur MAC**, la découverte cloud est **entièrement sautée** — le
+    plugin est muet dès le démarrage, sans le moindre `login`/`ListDevices`. Le
+    cloud n'est donc réellement sollicité qu'à la **première** installation
+    (cache vide) ou après l'ajout d'une nouvelle clim. (Les compteurs kWh ne sont
+    pas touchés sur ce chemin : le local les renseigne ensuite.)
+- **Local ET cloud coupés** (`Mode1=off` + `Mode2=off`) : c'est accepté, mais un
+  **avertissement clair** (`Domoticz.Error`) est logué au démarrage — après la
+  découverte initiale des clims, plus **aucune** donnée n'est rafraîchie.
+
 ## v2.1.4 — 2026 (Bastien1307, Claude)
 
 - **Logs entièrement en français**, de façon **fixe** (indépendante du paramètre
