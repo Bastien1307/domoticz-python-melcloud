@@ -2,6 +2,22 @@
 
 ***🇬🇧 English** · [🇫🇷 Français](ReleaseNotes.fr.md)*
 
+## v2.1.4 — 2026 (Bastien1307, Claude)
+
+- **Logs are now entirely in French**, **fixed** (independent of the `Language`
+  setting). Every remaining English or mixed log line in `plugin.py` and
+  `melcloud_local.py` has been translated: MELCloud connection, building / area /
+  floor discovery, unit polling, commands sent (heat, cool, fan, dry, auto, off),
+  setpoint, energy refresh, HTTP errors, local scan cycle, etc.
+- Rationale: when troubleshooting with a user in another language, if I ask them
+  to look for a given log line, they must see **exactly the same text** as I do.
+- **Device names** (the `tr()` function) are unchanged: they still follow the
+  language selected in the plugin. Only the logs are affected.
+- Additional cleanup: **all code comments** (German, English and missing French
+  accents) have been rewritten in correct French, and the last remaining English
+  log (the `Found N devices in building...` summary in `searchUnits`) has been
+  translated.
+
 ## v2.1.3 — 2026 (Bastien1307, Claude)
 
 - Robustness: if the user deletes a unit's devices in Domoticz (keeping the

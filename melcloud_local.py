@@ -300,7 +300,7 @@ class LocalLayer:
                 self.error("Local: impossible de deviner le sous-réseau (conteneur "
                            "isolé ?) — découverte suspendue jusqu'au prochain cycle.")
                 return False
-            self.log("Local: scan round {} ({} adresses: {})".format(
+            self.log("Local: cycle de scan {} ({} adresses : {})".format(
                 self._scan_round, len(self._scan_pool),
                 ", ".join(str(n) for n in subnets)))
 
@@ -330,7 +330,7 @@ class LocalLayer:
                 u["ip"], u["name"]))
             u["ip"] = None
             u["fail"] = 0
-            self._scan_pool = []  # forcer une reconstruction du pool au prochain step
+            self._scan_pool = []  # forcer une reconstruction du pool au prochain passage
 
     # ------------------------------------------------------------------ accès --
     def _controller(self, ip):
