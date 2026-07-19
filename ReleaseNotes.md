@@ -2,6 +2,14 @@
 
 ***🇬🇧 English** · [🇫🇷 Français](ReleaseNotes.fr.md)*
 
+## v2.1.3 — 2026 (Bastien1307, Claude)
+
+- Robustness: if the user deletes a unit's devices in Domoticz (keeping the
+  others), they are now **recreated automatically**. Previously device creation
+  was guarded by `len(Devices)==0`, so deleted devices were never recreated and
+  `onHeartbeat` crashed with a `KeyError`. Device creation is now idempotent
+  (per unit) and ensured before every sync. (Reported by harrykausl on the forum.)
+
 ## v2.1.2 — 2026 (Bastien1307, Claude)
 
 - pycryptodome compatibility: the Debian/Raspberry Pi apt package

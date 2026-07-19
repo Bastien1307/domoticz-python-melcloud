@@ -1,8 +1,12 @@
 # MELCloud Plugin
 # Author: Gysmo/schurgan/Dalonsic/ChatGPT/Claude/Bastien1307, 07.2026
-# Version: 2.1.2
+# Version: 2.1.3
 #
 # Release Notes:
+# v2.1.3: Robustesse : si l'utilisateur supprime des devices d'une clim (les
+#         autres restant), ils sont maintenant RECRÉÉS automatiquement au lieu
+#         de planter onHeartbeat (KeyError). Création des devices rendue
+#         idempotente (par unité) + garantie avant chaque sync.
 # v2.1.2: Compat pycryptodome : le paquet Debian/Raspberry Pi apt fournit le
 #         module sous 'Cryptodome' (pas 'Crypto') -> la couche locale était
 #         désactivée à tort (import Crypto échoue). Pont Cryptodome->Crypto dans
@@ -54,7 +58,7 @@
 #        Usefull if you use your Mitsubishi remote
 # v0.1 : Initial release
 """
-<plugin key="MELCloud" version="2.1.2" name="MELCloud plugin" author="gysmo schurgan dalonsic ChatGPT Claude Bastien1307" wikilink="http://www.domoticz.com/wiki/Plugins/MELCloud.html" externallink="http://www.melcloud.com">
+<plugin key="MELCloud" version="2.1.3" name="MELCloud plugin" author="gysmo schurgan dalonsic ChatGPT Claude Bastien1307" wikilink="http://www.domoticz.com/wiki/Plugins/MELCloud.html" externallink="http://www.melcloud.com">
     <params>
         <param field="Username" label="Email" width="200px" required="true" />
         <param field="Password" label="Password" width="200px" required="true" password="true"/>
@@ -1200,26 +1204,35 @@ class BasePlugin:
                 Domoticz.Debug("MELCloud https failed. Reconnected in "+str(self.runAgain)+" heartbeats.")
 
     # Steap 19
+    def _ensure_unit_devices(self, unit):
+        # (Re)crée les devices interrupteurs MANQUANTS d'une unité (Mode, Fan,
+        # Temp, vannes, Room Temp, Unit Infos). Idempotent : ne touche pas à ceux
+        # qui existent. Appelé à la création ET avant chaque sync, pour survivre
+        # à une suppression manuelle de device côté Domoticz (sinon KeyError).
+        for switch in self.list_switchs:
+            u = switch["id"] + unit["idoffset"]
+            if u in Devices:
+                continue
+            name = unit['name'] + " - " + tr(switch["name"])
+            if switch["typename"] == "Selector Switch":
+                opts = {"LevelNames": tr_levels(switch["levels"]),
+                        "LevelOffHidden": "false", "SelectorStyle": "1"}
+                Domoticz.Device(Name=name, Unit=u, TypeName=switch["typename"],
+                                Image=switch["image"], Options=opts, Used=1).Create()
+            elif switch["typename"] == "Thermostat":
+                Domoticz.Device(Name=name, Unit=u, Type=242, Subtype=1, Used=1).Create()
+            else:
+                Domoticz.Device(Name=name, Unit=u, TypeName=switch["typename"], Used=1).Create()
+            Domoticz.Log("Device (re)créé: {} (Unit {})".format(name, u))
+
     def melcloud_create_units(self):
         Domoticz.Log("Units infos " + str(self.list_units))
-        if len(Devices) == 0:
-            # Init Devices
-            # Creation of switches
-            Domoticz.Log("Find " + str(len(self.list_units)) + " devices in MELCloud")
-            for device in self.list_units:
-                Domoticz.Log("Creating device: " + device['name'] + " with melID " + str(device['id']))
-                for switch in self.list_switchs:
-                    # Create switchs
-                    if switch["typename"] == "Selector Switch":
-                        switch_options = {"LevelNames": tr_levels(switch["levels"]), "LevelOffHidden": "false", "SelectorStyle": "1"}
-                        Domoticz.Device(Name=device['name'] + " - "+tr(switch["name"]), Unit=switch["id"]+device['idoffset'],
-                                        TypeName=switch["typename"], Image=switch["image"], Options=switch_options, Used=1).Create()
-                    elif switch["typename"] == "Thermostat":
-                        Domoticz.Device(Name=device['name'] + " - "+tr(switch["name"]), Unit=switch["id"]+device['idoffset'],
-                                        Type=242, Subtype=1, Used=1).Create()
-                    else:
-                        Domoticz.Device(Name=device['name'] + " - "+tr(switch["name"]), Unit=switch["id"]+device['idoffset'],
-                                        TypeName=switch["typename"], Used=1).Create()
+        # Création idempotente, par unité : on (re)crée uniquement les devices
+        # manquants. Avant, le bloc était gardé par len(Devices)==0 -> si
+        # l'utilisateur supprimait les devices d'une clim (les autres restant),
+        # ils n'étaient jamais recréés et le sync plantait (KeyError).
+        for device in self.list_units:
+            self._ensure_unit_devices(device)
         # Compteurs kWh : creation si absents (installs neuves ET existantes)
         # puis renseignement des valeurs deja connues via ListDevices.
         self._ensure_energy_devices()
@@ -1531,6 +1544,10 @@ class BasePlugin:
             Domoticz.Debug("Mode debounce {0}: '{1}' en attente de confirmation".format(unit['name'], sValue))
 
     def domoticz_sync_switchs(self, unit):
+        # Garantit d'abord que les devices de l'unité existent : l'utilisateur
+        # peut en avoir supprimé côté Domoticz, et on accède ensuite à Devices[...]
+        # sans garde. Les recréer ici évite un KeyError qui casserait onHeartbeat.
+        self._ensure_unit_devices(unit)
         # Default value in case of problem
         setDomFan = 0
         setDomTemp = 0

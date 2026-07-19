@@ -2,6 +2,15 @@
 
 *[🇬🇧 English](ReleaseNotes.md) · **🇫🇷 Français***
 
+## v2.1.3 — 2026 (Bastien1307, Claude)
+
+- Robustesse : si l'utilisateur supprime les devices d'une clim dans Domoticz
+  (en gardant ceux des autres), ils sont désormais **recréés automatiquement**.
+  Avant, la création était gardée par `len(Devices)==0` → les devices supprimés
+  n'étaient jamais recréés et `onHeartbeat` plantait sur un `KeyError`. Création
+  rendue idempotente (par unité) et garantie avant chaque synchronisation.
+  (Remonté par harrykausl sur le forum.)
+
 ## v2.1.2 — 2026 (Bastien1307, Claude)
 
 - Compatibilité pycryptodome : le paquet apt Debian/Raspberry Pi
