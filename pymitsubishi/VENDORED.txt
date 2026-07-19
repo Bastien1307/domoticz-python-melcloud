@@ -1,3 +1,10 @@
 Vendored copy of pymitsubishi 0.5.2 (MIT) — https://github.com/pymitsubishi/pymitsubishi
 Embarqué pour la couche locale du plugin (pas de pip install nécessaire pour la lib elle-même).
-Dépendances runtime requises côté Domoticz : requests, pycryptodome (import Crypto).
+Copie NON modifiée (identique à l'upstream v0.5.2).
+
+Dépendances runtime requises côté Domoticz : requests, pycryptodome.
+NB : la lib fait `from Crypto...`. Le paquet pip fournit ce namespace `Crypto`,
+mais le paquet Debian/Raspberry Pi `python3-pycryptodome` (apt) le fournit sous
+`Cryptodome`. melcloud_local.py met en place un pont Cryptodome->Crypto avant
+d'importer cette lib, donc les deux méthodes d'installation fonctionnent (la lib
+vendorée n'a PAS été modifiée pour ça).
