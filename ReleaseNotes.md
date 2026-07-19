@@ -2,6 +2,33 @@
 
 ***🇬🇧 English** · [🇫🇷 Français](ReleaseNotes.fr.md)*
 
+## v2.2.3 — 2026 (Bastien1307, Claude)
+
+- **Full unification of log prefixes.** Every line now states its
+  **source/nature**:
+  - « **Cloud :** » — connection, discovery, unit/energy reads, backoff, HTTP
+    errors, **Internet gating** (it only affects the cloud);
+  - « **Local :** » — local poll, IP discovery, remote temperature, remote lock;
+  - « **Cache :** » — cache load/persist;
+  - « **Icônes :** » — icon resolution;
+  - « **Action :** » — command coming from **Domoticz** (Domoticz → AC direction);
+  - « **Plugin :** » — lifecycle (stop), device creation, internal reflections.
+- **Commands**: the **send** line carries the **channel actually used**:
+  « Local : commande envoyée … » if the local path takes over, otherwise
+  « Cloud : commande envoyée … » (the missing cloud-fallback trace was added).
+- Cleaned up a cryptic legacy debug log (« … infos 2. » → « mise à jour du
+  device N (vanne horizontale) »).
+- **Code cleanup**: removed 2 stale commented-out code lines. The `onNotification`
+  callback (never used) is **kept** for plugin-interface completeness but moved to
+  `Debug` (« Plugin : » prefix), so it stays out of the normal log.
+
+## v2.2.2 — 2026 (Bastien1307, Claude)
+
+- **Consistent logs.** The **cloud** flow is now prefixed « **Cloud :** »
+  (connection, building/area/floor discovery, unit list, energy, backoff, HTTP
+  errors), matching the « Local : » / « Cache : » / « Icônes : » prefixes. The
+  **source** of each log line is immediately recognisable.
+
 ## v2.2.1 — 2026 (Bastien1307, Claude)
 
 - **Clearer logs.**

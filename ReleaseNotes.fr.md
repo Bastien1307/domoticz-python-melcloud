@@ -2,6 +2,36 @@
 
 *[🇬🇧 English](ReleaseNotes.md) · **🇫🇷 Français***
 
+## v2.2.3 — 2026 (Bastien1307, Claude)
+
+- **Uniformisation complète des préfixes de logs.** Chaque ligne annonce
+  maintenant sa **source/nature** :
+  - « **Cloud :** » — connexion, découverte, lecture des unités/énergie, backoff,
+    erreurs HTTP, **gating Internet** (il ne concerne que le cloud) ;
+  - « **Local :** » — poll local, découverte IP, température distante, verrou
+    télécommande ;
+  - « **Cache :** » — chargement/persistance du cache ;
+  - « **Icônes :** » — résolution des icônes ;
+  - « **Action :** » — commande venue de **Domoticz** (sens Domoticz → clim) ;
+  - « **Plugin :** » — cycle de vie (arrêt), création de devices, reflets internes.
+- **Commandes** : la ligne d'**envoi** porte la **source réellement utilisée** :
+  « Local : commande envoyée … » si le local prend la main, sinon « Cloud :
+  commande envoyée … » (la trace de bascule vers le cloud, qui manquait, a été
+  ajoutée).
+- Nettoyage d'un log debug cryptique hérité (« … infos 2. » → « mise à jour du
+  device N (vanne horizontale) »).
+- **Nettoyage de code** : 2 lignes de code commentées obsolètes supprimées. Le
+  callback `onNotification` (jamais exploité) est **conservé** pour la complétude
+  de l'interface de plugin, mais passé en `Debug` (préfixe « Plugin : »), donc
+  invisible dans le log courant.
+
+## v2.2.2 — 2026 (Bastien1307, Claude)
+
+- **Cohérence des logs.** Le flux **cloud** est désormais préfixé « **Cloud :** »
+  (connexion, découverte bâtiments/zones/étages, liste des unités, énergie,
+  backoff, erreurs HTTP), à l'image des préfixes « Local : » / « Cache : » /
+  « Icônes : ». On repère immédiatement la **source** de chaque ligne de log.
+
 ## v2.2.1 — 2026 (Bastien1307, Claude)
 
 - **Clarté des logs.**
